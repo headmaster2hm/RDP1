@@ -1,32 +1,42 @@
 name: RDP
 
 on:
+
   workflow_dispatch:
 
 jobs:
+
   secure-rdp:
+
     runs-on: windows-latest
 
     timeout-minutes: 3600
 
     steps:
+
       - name: Configure Core RDP Settings
 
         run: |
 
           # Enable Remote Desktop and disable Network Level Authentication (if needed)
 
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `-Name "fDenyTSConnections" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
 
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `-Name "UserAuthentication" -Value 0 -Force
+                             -Name "fDenyTSConnections" -Value 0 -Force
 
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `-Name "SecurityLayer" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
+
+                             -Name "UserAuthentication" -Value 0 -Force
+
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
+
+                             -Name "SecurityLayer" -Value 0 -Force
 
           # Remove any existing rule with the same name to avoid duplication
 
           netsh advfirewall firewall delete rule name="RDP-Tailscale"
 
-
+         
 
           # For testing, allow any incoming connection on port 3389
 
@@ -78,11 +88,11 @@ jobs:
 
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
 
-
+         
 
           echo "RDP_CREDS=User: RDP | Password: $password" >> $env:GITHUB_ENV
 
-
+         
 
           if (-not (Get-LocalUser -Name "RDP")) {
 
@@ -100,7 +110,7 @@ jobs:
 
           $installerPath = "$env:TEMP\tailscale.msi"
 
-
+         
 
           Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
 
@@ -116,7 +126,7 @@ jobs:
 
           & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
 
-
+         
 
           # Wait for Tailscale to assign an IP
 
@@ -134,7 +144,7 @@ jobs:
 
           }
 
-
+         
 
           if (-not $tsIP) {
 
@@ -146,13 +156,15 @@ jobs:
 
           echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
 
+     
+
       - name: Verify RDP Accessibility
 
         run: |
 
           Write-Host "Tailscale IP: $env:TAILSCALE_IP"
 
-
+         
 
           # Test connectivity using Test-NetConnection against the Tailscale IP on port 3389
 
@@ -182,7 +194,7 @@ jobs:
 
           Write-Host "==================`n"
 
-
+         
 
           # Keep runner active indefinitely (or until manually cancelled)
 
